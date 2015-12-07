@@ -304,6 +304,8 @@ private:
 
         TEST_CASE(wrongPathOnUnicodeError); // see #6773
         TEST_CASE(wrongPathOnErrorDirective);
+
+        TEST_CASE(testDirectiveInclude);
     }
 
     std::string preprocessorRead(const char* code) {
@@ -3741,6 +3743,55 @@ private:
         const std::string code("#error hello world!\n");
         preprocessor.getcode(code, "X", "./././test.c");
         ASSERT_EQUALS("[test.c:1]: (error) #error hello world!\n", errout.str());
+    }
+
+    void testDirectiveInclude() {
+        const char filedata[] = "#file \"inc1.h\"\n"
+                                "#file \"inc2.h\"\n"
+                                "#define macro1 val\n"
+                                "#endfile\n"
+                                "#undef macro1\n"
+                                "#ifdef(macro1<0)\n"
+                                "#elif (cond2>macro1)\n"
+                                "#else\n"
+                                "#endif\n"
+                                "#endfile\n"
+                                /* check that comments are stripped */
+                                "#ifdef macro2 /* this is extra */\n"
+                                "#else /* anything goes in 'extra' */\n"
+                                "#endif /* anything goes in 'extra' */\n"
+                                "#pragma some-proprietary-content\n"
+                                "#\n" /* may appear in old C code */
+                                "#ident some text\n" /* may appear in old C code */
+                                "#unknownmacro anything\n"
+                                "#warning some-warning-message\n"
+                                "#error some-error-message\n";
+        const char dumpdata[] = "  <directivelist>\n"
+                                "    <directive file=\"test.c\" linenr=\"1\" str=\"#include &quot;inc1.h&quot;\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"1\" str=\"#include &quot;inc2.h&quot;\"/>\n"
+                                "    <directive file=\"inc2.h\" linenr=\"1\" str=\"#define macro1 val\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"2\" str=\"#undef macro1\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"3\" str=\"#ifdef(macro1&lt;0)\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"4\" str=\"#elif (cond2&gt;macro1)\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"5\" str=\"#else\"/>\n"
+                                "    <directive file=\"inc1.h\" linenr=\"6\" str=\"#endif\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"2\" str=\"#ifdef macro2\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"3\" str=\"#else\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"4\" str=\"#endif\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"5\" str=\"#pragma some-proprietary-content\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"6\" str=\"#\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"7\" str=\"#ident some text\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"8\" str=\"#unknownmacro anything\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"9\" str=\"#warning some-warning-message\"/>\n"
+                                "    <directive file=\"test.c\" linenr=\"10\" str=\"#error some-error-message\"/>\n"
+                                "  </directivelist>\n";
+
+        std::ostringstream ostr;
+        Settings settings;
+        Preprocessor preprocessor(settings, this);
+        preprocessor.getcode(filedata, "", "test.c");
+        preprocessor.dump(ostr);
+        ASSERT_EQUALS(dumpdata, ostr.str());
     }
 
 };

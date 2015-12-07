@@ -31,6 +31,40 @@
 class ErrorLogger;
 class Settings;
 
+/**
+ * @brief A preprocessor directive
+ * Each preprocessor directive (#include, #define, #undef,#if, #ifdef,
+ * #else, #endif) will be recorded as an instance of this class.
+ *
+ * Two locations are recorded with a directive:
+ *
+ * - the source location: this is the ocation, in a source file processed
+ *   by cppcheck or in a directly or indirectly included file, where the
+ *   directive is defined;
+ *
+ * - the definition location: this is the location, in a souce file processed
+ *   by cppcheck, where the directive starts applying.
+ *
+ * For directives which are defined directly in the source file, srcfile
+ * and srclinenr are equal to deffile and deflinenr respectively.
+ *
+ */
+
+class CPPCHECKLIB Directive {
+public:
+    /** name of (possibly included) file where directive is defined */
+    std::string file;
+
+    /** line number in (possibly included) file where directive is defined */
+    int linenr;
+
+    /** the actual directive text */
+    std::string str;
+
+    /** record a directive (possibly filtering src) */
+    Directive(const std::string &_file, const int _linenr, std::string _str);
+};
+
 /// @addtogroup Core
 /// @{
 
@@ -250,6 +284,11 @@ public:
         file0 = f;
     }
 
+    /**
+     * dump all directives present in source file
+     */
+    void dump(std::ostream &out) const;
+
 private:
     void missingInclude(const std::string &filename, unsigned int linenr, const std::string &header, HeaderTypes headerType);
 
@@ -270,6 +309,9 @@ private:
 
     Settings& _settings;
     ErrorLogger *_errorLogger;
+
+    /** list of all directives met while preprocessing file */
+    std::list<Directive> directives;
 
     /** filename for cpp/c file - useful when reporting errors */
     std::string file0;

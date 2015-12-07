@@ -7,6 +7,47 @@
 
 import xml.etree.ElementTree as ET
 
+
+## Directive class. Contains information about each preprocessor directive in the source code.
+#
+# Two locations are recorded with a directive:
+#
+# - the source location: this is the ocation, in a source file processed
+#   by cppcheck or in a directly or indirectly included file, where the
+#   directive is defined;
+#
+# - the definition location: this is the location, in a souce file processed
+#   by cppcheck, where the directive starts applying.
+#
+# For directives which are defined directly in the source file, srcfile
+# and srclinenr are equal to deffile and deflinenr respectively.
+#
+# To iterate through all directives use such code:
+# @code
+# data = cppcheckdata.parsedump(...)
+# for cfg in data.configurations:
+#   code = ''
+#   for directive in cfg.directives:
+#     code = code + directive.str + '\n'
+#   print(code)
+# @endcode
+#
+
+
+class Directive:
+    ## Directive string
+    str = None
+    ## name of the source file where the directive starts applying
+    file = None
+    ## line in the source file where the directive starts applying
+    linenr = None
+
+    def __init__(self, element):
+        self.str = element.get('str')
+        self.file = element.get('file')
+        self.linenr = element.get('linenr')
+
+
 ## Token class. Contains information about each token in the source code.
 #
 # The CppcheckData.tokenlist is a list of Token items
@@ -16,10 +57,11 @@ import xml.etree.ElementTree as ET
 # To iterate through all tokens use such code:
 # @code
 # data = cppcheckdata.parsedump(...)
-# code = ''
-# for token in data.tokenlist:
-#   code = code + token.str + ' '
-# print(code)
+# for cfg in data.configurations:
+#   code = ''
+#   for token in cfg.tokenlist:
+#     code = code + token.str + ' '
+#   print(code)
 # @endcode
 #
 
@@ -380,13 +422,15 @@ class ValueFlow:
             self.values.append(ValueFlow.Value(value))
 
 ## Configuration class
-# This class contains the tokens, scopes, functions, variables and
-# value flows for one configuration.
+# This class contains the directives, tokens, scopes, functions,
+# variables and value flows for one configuration.
 
 
 class Configuration:
     ## Name of the configuration, "" for default
     name = ''
+    ## List of Directive items
+    directives = []
     ## List of Token items
     tokenlist = []
     ## List of Scope items
@@ -400,6 +444,7 @@ class Configuration:
 
     def __init__(self, confignode):
         self.name = confignode.get('cfg')
+        self.directives = []
         self.tokenlist = []
         self.scopes = []
         self.functions = []
@@ -407,6 +452,10 @@ class Configuration:
         self.valueflow = []
 
         for element in confignode:
+            if element.tag == 'directivelist':
+                for directive in element:
+                    self.directives.append(Directive(directive))
+
             if element.tag == 'tokenlist':
                 for token in element:
                     self.tokenlist.append(Token(token))

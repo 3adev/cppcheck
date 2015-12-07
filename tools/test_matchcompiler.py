@@ -140,28 +140,33 @@ class MatchCompilerTest(unittest.TestCase):
         # offset '5' is chosen as an abritary start offset to look for
         res = self.mc._parseStringComparison(input, 5)
         self.assertEqual(2, len(res))
-        self.assertEqual('str == MatchCompiler::makeConstString("abc")', input[:res[0]] + "MatchCompiler::makeConstString(" + input[res[0]:res[1]] + ")" + input[res[1]:])
+        self.assertEqual('str == MatchCompiler::makeConstString("abc")', input[
+                         :res[0]] + "MatchCompiler::makeConstString(" + input[res[0]:res[1]] + ")" + input[res[1]:])
 
         input = 'str == "a\\"b\\"c"'
         res = self.mc._parseStringComparison(input, 5)
         self.assertEqual(2, len(res))
-        self.assertEqual('str == MatchCompiler::makeConstString("a\\"b\\"c")', input[:res[0]] + "MatchCompiler::makeConstString(" + input[res[0]:res[1]] + ")" + input[res[1]:])
+        self.assertEqual('str == MatchCompiler::makeConstString("a\\"b\\"c")', input[
+                         :res[0]] + "MatchCompiler::makeConstString(" + input[res[0]:res[1]] + ")" + input[res[1]:])
 
     def test_replaceCStrings(self):
         # str() ==
         input = 'if (tok2->str() == "abc") {'
         output = self.mc._replaceCStrings(input)
-        self.assertEqual('if (tok2->str() == MatchCompiler::makeConstString("abc")) {', output)
+        self.assertEqual(
+            'if (tok2->str() == MatchCompiler::makeConstString("abc")) {', output)
 
         # str() !=
         input = 'if (tok2->str() != "xyz") {'
         output = self.mc._replaceCStrings(input)
-        self.assertEqual('if (tok2->str() != MatchCompiler::makeConstString("xyz")) {', output)
+        self.assertEqual(
+            'if (tok2->str() != MatchCompiler::makeConstString("xyz")) {', output)
 
         # strAt()
         input = 'if (match16(parent->tokAt(-3)) && tok->strAt(1) == ")")'
         output = self.mc._replaceCStrings(input)
-        self.assertEqual('if (match16(parent->tokAt(-3)) && tok->strAt(1) == MatchCompiler::makeConstString(")"))', output)
+        self.assertEqual(
+            'if (match16(parent->tokAt(-3)) && tok->strAt(1) == MatchCompiler::makeConstString(")"))', output)
 
 if __name__ == '__main__':
     unittest.main()

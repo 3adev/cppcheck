@@ -35,7 +35,8 @@ numberOfFalseNegatives = 0
 for result in results.split('\n'):
     result = result.strip()
 
-    res = re.match('\\[(' + project + '.+):([0-9]+)\\]:\s+[(][a-z]+[)] (.+)', result)
+    res = re.match(
+        '\\[(' + project + '.+):([0-9]+)\\]:\s+[(][a-z]+[)] (.+)', result)
     if res is None:
         continue
 
@@ -59,9 +60,11 @@ for result in results.split('\n'):
     html += '<td class=' + css + '>' + linenr + '</td>'
     html += '<td class=' + css + '>' + message + '</td>'
     if project == 'linux-3.11':
-        href = 'http://github.com/torvalds/linux/blob/v3.11' + filename[filename.find('/'):] + '#L' + linenr
+        href = 'http://github.com/torvalds/linux/blob/v3.11' + \
+            filename[filename.find('/'):] + '#L' + linenr
     if href:
-        html += '<td class=' + css + '><a href="' + href + '">' + classification + '</a></td>'
+        html += '<td class=' + css + '><a href="' + \
+            href + '">' + classification + '</a></td>'
     else:
         html += '<td class=' + css + '>' + classification + '</td>'
     html += '</tr>\n'
@@ -74,7 +77,8 @@ for line in f.readlines():
     if line.find('] -> [') > 0 or line.find('(error)') < 0:
         continue
 
-    res = re.match('\\[(' + project + '.+):([0-9]+)\\]:\s+[(][a-z]+[)] (.+)', line)
+    res = re.match(
+        '\\[(' + project + '.+):([0-9]+)\\]:\s+[(][a-z]+[)] (.+)', line)
     if res is None:
         continue
 
@@ -107,13 +111,18 @@ else:
     project2 = project
 
 fout = open('report.html', 'wt')
-fout.write('<html><head><title>Cppcheck results for ' + project + '</title><link rel="stylesheet" type="text/css" href="theme1.css"></head><body>\n')
+fout.write('<html><head><title>Cppcheck results for ' + project +
+           '</title><link rel="stylesheet" type="text/css" href="theme1.css"></head><body>\n')
 fout.write('<h1>Cppcheck results for ' + project + '</h1>\n')
-fout.write('<p>Number of false negatives: ' + str(numberOfFalseNegatives) + '</p>\n')
-fout.write('<p>Number of true positives: ' + str(numberOfTruePositives) + '</p>\n')
-fout.write('<p>Number of false positives: ' + str(numberOfFalsePositives) + '</p>\n')
+fout.write('<p>Number of false negatives: ' +
+           str(numberOfFalseNegatives) + '</p>\n')
+fout.write('<p>Number of true positives: ' +
+           str(numberOfTruePositives) + '</p>\n')
+fout.write('<p>Number of false positives: ' +
+           str(numberOfFalsePositives) + '</p>\n')
 fout.write('<table border="0">\n')
-fout.write('<tr><th>Filename</th><th>Line</th><th>Message</th><th>Classification</th></tr>\n')
+fout.write(
+    '<tr><th>Filename</th><th>Line</th><th>Message</th><th>Classification</th></tr>\n')
 fout.write(out['fn'])
 fout.write(out['tp'])
 fout.write(out['fp'])

@@ -84,7 +84,7 @@ class MatchCompiler:
         if tok == '%any%':
             return 'true'
         elif tok == '%assign%':
-			return 'tok->isAssignmentOp()'
+            return 'tok->isAssignmentOp()'
         elif tok == '%bool%':
             return 'tok->isBoolean()'
         elif tok == '%char%':
@@ -155,7 +155,8 @@ class MatchCompiler:
 
             # [abc]
             if (len(tok) > 2) and (tok[0] == '[') and (tok[-1] == ']'):
-                ret += '    if (!tok || tok->str().size()!=1U || !strchr("' + tok[1:-1] + '", tok->str()[0]))\n'
+                ret += '    if (!tok || tok->str().size()!=1U || !strchr("' + tok[
+                    1:-1] + '", tok->str()[0]))\n'
                 ret += '        ' + returnStatement
 
             # a|b|c
@@ -190,7 +191,8 @@ class MatchCompiler:
 
             # !!a
             elif tok[0:2] == "!!":
-                ret += '    if (tok && tok->str() == MatchCompiler::makeConstString("' + tok[2:] + '"))\n'
+                ret += '    if (tok && tok->str() == MatchCompiler::makeConstString("' + tok[
+                    2:] + '"))\n'
                 ret += '        ' + returnStatement
                 gotoNextToken = '    tok = tok ? tok->next() : NULL;\n'
 
@@ -332,8 +334,9 @@ class MatchCompiler:
 #        ret += '        if (tok)\n'
 #        ret += '            std::cout << "tok: " << tok->str();\n'
 #        ret += '        if (tok->next())\n'
-#        ret += '            std::cout << "tok next: " << tok->next()->str();\n'
-        ret += '        throw InternalError(tok, "Internal error. compiled match returned different result than parsed match: ' + pattern + '");\n'
+# ret += '            std::cout << "tok next: " << tok->next()->str();\n'
+        ret += '        throw InternalError(tok, "Internal error. compiled match returned different result than parsed match: ' + \
+            pattern + '");\n'
         ret += '    }\n'
         ret += '    return res_compiled_match;\n'
         ret += '}\n'
@@ -459,7 +462,8 @@ class MatchCompiler:
         # Don't use assert() here, it's disabled for optimized builds.
         # We also need to verify builds in 'release' mode
         ret += '    if (res_parsed_findmatch != res_compiled_findmatch) {\n'
-        ret += '        throw InternalError(tok, "Internal error. compiled findmatch returned different result than parsed findmatch: ' + pattern + '");\n'
+        ret += '        throw InternalError(tok, "Internal error. compiled findmatch returned different result than parsed findmatch: ' + \
+            pattern + '");\n'
         ret += '    }\n'
         ret += '    return res_compiled_findmatch;\n'
         ret += '}\n'
@@ -596,8 +600,10 @@ class MatchCompiler:
             startPos = res[0]
             endPos = res[1]
             text = line[startPos + 1:endPos - 1]
-            line = line[:startPos] + 'MatchCompiler::makeConstStringBegin' + text + 'MatchCompiler::makeConstStringEnd' + line[endPos:]
-        line = line.replace('MatchCompiler::makeConstStringBegin', 'MatchCompiler::makeConstString("')
+            line = line[:startPos] + 'MatchCompiler::makeConstStringBegin' + \
+                text + 'MatchCompiler::makeConstStringEnd' + line[endPos:]
+        line = line.replace(
+            'MatchCompiler::makeConstStringBegin', 'MatchCompiler::makeConstString("')
         line = line.replace('MatchCompiler::makeConstStringEnd', '")')
         return line
 

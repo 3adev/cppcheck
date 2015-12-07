@@ -33,6 +33,40 @@
 #include <set>
 #include <stack>
 
+/**
+ * Remove heading and trailing whitespaces from the input parameter.
+ * @param s The string to trim.
+ */
+static std::string trim(const std::string& s)
+{
+    const std::string::size_type beg = s.find_first_not_of(" \t");
+    if (beg == std::string::npos)
+        return s;
+    const std::string::size_type end = s.find_last_not_of(" \t");
+    if (end == std::string::npos)
+        return s.substr(beg);
+    return s.substr(beg, end - beg + 1);
+}
+
+Directive::Directive(const std::string &_file, const int _linenr, std::string _str):
+    file(_file),
+    linenr(_linenr),
+    str(_str)
+{
+    // strip C++ comment if there is one
+    size_t pos = str.find("//");
+    if (pos != std::string::npos)
+        str.erase(pos);
+    // strip any C comments
+    while ((pos = str.find("/*")) != std::string::npos) {
+        size_t end = str.find("*/", pos+2);
+        if (end != std::string::npos) {
+            str.erase(pos, end + 2 - pos);
+        }
+    }
+    str = trim(str);
+}
+
 bool Preprocessor::missingIncludeFlag;
 bool Preprocessor::missingSystemIncludeFlag;
 
@@ -1749,7 +1783,9 @@ bool Preprocessor::match_cfg_def(std::map<std::string, std::string> cfg, std::st
 
 std::string Preprocessor::getcode(const std::string &filedata, const std::string &cfg, const std::string &filename)
 {
-    // For the error report
+    // For the error report and preprocessor dump:
+    // line number relative to current (included) file
+    // (may decrease when popping back from an included file)
     unsigned int lineno = 0;
 
     std::ostringstream ret;
@@ -1766,8 +1802,22 @@ std::string Preprocessor::getcode(const std::string &filedata, const std::string
     std::stack<unsigned int> lineNumbers;
     std::istringstream istr(filedata);
     std::string line;
+    directives.clear();
     while (std::getline(istr, line)) {
         ++lineno;
+
+        // record directive for addons / checkers
+        if ((line[0] == '#')
+            && (line.compare(0, 6, "#line ") != 0)
+            && (line.compare(0, 8, "#endfile") != 0)) {
+            // for clarity, turn "#file ..." back into "#include ..."
+            std::string orig_line = line;
+            if (orig_line.compare(0, 6, "#file ")==0)
+                orig_line.replace(1, 4, "include");
+            // record directive and extra
+            directives.push_back(Directive(filenames.top(), lineno,
+                                           orig_line));
+        }
 
         if (_settings.terminated())
             return "";
@@ -2410,21 +2460,6 @@ static void skipstring(const std::string &line, std::string::size_type &pos)
             ++pos;
         ++pos;
     }
-}
-
-/**
- * Remove heading and trailing whitespaces from the input parameter.
- * @param s The string to trim.
- */
-static std::string trim(const std::string& s)
-{
-    const std::string::size_type beg = s.find_first_not_of(" \t");
-    if (beg == std::string::npos)
-        return s;
-    const std::string::size_type end = s.find_last_not_of(" \t");
-    if (end == std::string::npos)
-        return s.substr(beg);
-    return s.substr(beg, end - beg + 1);
 }
 
 /**
@@ -3271,4 +3306,24 @@ void Preprocessor::getErrorMessages(ErrorLogger *errorLogger, const Settings *se
     preprocessor.missingInclude("", 1, "", SystemHeader);
     preprocessor.validateCfgError("X", "X");
     preprocessor.error("", 1, "#error message");   // #error ..
+}
+
+void Preprocessor::dump(std::ostream &out) const
+{
+    // Create a xml directive dump.
+    // The idea is not that this will be readable for humans. It's a
+    // data dump that 3rd party tools could load and get useful info from.
+    std::list<Directive>::const_iterator it;
+
+    out << "  <directivelist>" << std::endl;
+
+    for (it = directives.begin(); it != directives.end(); ++it) {
+        out << "    <directive "
+            << "file=\"" << it->file << "\" "
+            << "linenr=\"" << it->linenr << "\" "
+            // str might contain characters such as '"', '<' or '>' which
+            // could result in invalid XML, so run it through toxml().
+            << "str=\"" << ErrorLogger::toxml(it->str) << "\"/>" << std::endl;
+    }
+    out << "  </directivelist>" << std::endl;
 }
